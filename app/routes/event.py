@@ -11,7 +11,7 @@ def get_events():
     if response.data:
         return jsonify(response.data), 200
     else:
-        return jsonify({"error": "No events yet"}), 404
+        return jsonify([]), 200
 
 @bp.route('/create', methods=['POST'])
 def create_event():
