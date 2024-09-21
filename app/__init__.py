@@ -6,5 +6,4 @@ def create_app():
 
     # Register blueprints for modular routes
     app.register_blueprint(authentication.bp, url_prefix='/users')
-
     return app
