@@ -18,7 +18,7 @@ def create_user():
             else:
                 return jsonify({"error": response.error_message}), 400
         else:
-            return jsonify({"error": str(e)}), 400
+            return jsonify({"error": location_response.error_message}), 400
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 @bp.route('/<user_id>', methods=['GET'])
