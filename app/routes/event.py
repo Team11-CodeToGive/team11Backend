@@ -11,8 +11,12 @@ def get_events():
         for i in range(len(response.data)):
             location_response = supabase.table('Location').select('*').eq('id', response.data[i]['address_id']).execute()
             if location_response.data:
-                response.data[0]['location'] = location_response.data[0]
-                del response.data[0]['address_id']
+                response.data[i]['location'] = location_response.data[0]
+                del response.data[i]['address_id']
+            attendee_response = supabase.table('EventRegistration').select('*').eq('event_id', response.data[i]['event_id']).execute()
+        
+            # Add the attendees (with user info) to the event data
+            response.data[i]['attendees'] = get_attendees_info(attendee_response)
 
         return jsonify(response.data), 200
     else:
@@ -45,22 +49,9 @@ def get_event(event_id):
             response.data[0]['location'] = location_response.data[0]
             del response.data[0]['address_id']
         attendee_response = supabase.table('EventRegistration').select('*').eq('event_id', event_id).execute()
-        attendees_user_info = []
-
-        if attendee_response.data:
-            for attendee in attendee_response.data:
-                user_id = attendee['user_id']
-                print(user_id)
-                user_response = supabase.table('users').select('*').eq('user_id', user_id).execute()
-                
-                if user_response.data:
-                    # Combine user info with attendee data
-                    attendee['user_info'] = user_response.data[0]
-
-                 # Add to the list of attendees
-                attendees_user_info.append(attendee)
+        
          # Add the attendees (with user info) to the event data
-        response.data[0]['attendees'] = attendees_user_info
+        response.data[0]['attendees'] = get_attendees_info(attendee_response)
 
 
         return jsonify(response.data[0]), 200
@@ -107,5 +98,25 @@ def cancel_event(event_id):
     
 
 
+# Utility Functions
 
+def get_attendees_info(attendee_response):
+    '''
+    returns list of attending users
+    '''
+    attendees_user_info = []
+
+    if attendee_response.data:
+        for attendee in attendee_response.data:
+            user_id = attendee['user_id']
+            print(user_id)
+            user_response = supabase.table('users').select('*').eq('user_id', user_id).execute()
+            
+            if user_response.data:
+                # Combine user info with attendee data
+                attendee['user_info'] = user_response.data[0]
+
+                # Add to the list of attendees
+            attendees_user_info.append(attendee)
     
+    return attendees_user_info
