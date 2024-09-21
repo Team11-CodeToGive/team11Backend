@@ -6,20 +6,57 @@ supabase = get_supabase_client()
 
 @bp.route('/', methods=['GET'])
 def get_events():
-    pass  # GET method to retrieve all events
+    response = supabase.table('Events').select('*').execute()
+
+    if response.data:
+        return jsonify(response.data), 200
+    else:
+        return jsonify({"error": "No events yet"}), 404
 
 @bp.route('/create', methods=['POST'])
 def create_event():
-    pass
+    event_data = request.get_json()
+    try:
+        response = supabase.table('Events').insert(event_data).execute()
+        if len(response.data) > 0:
+            return jsonify({"message": "Event created successfully!"}), 201
+        else:
+            return jsonify({"error": response.error_message}), 400
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}), 400
 
 @bp.route('/<int:event_id>', methods=['GET'])
 def get_event(event_id):
-    pass
+    response = supabase.table('Events').select('*').eq('event_id', event_id).execute()
+    
+    if response.data:
+        return jsonify(response.data[0]), 200
+    else:
+        return jsonify({"error": "Event not found"}), 404
 
 @bp.route('/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
-    pass
+    data = request.get_json()
+
+    if not data:
+        return jsonify({"error": "No data provided to update"}), 400
+    
+    response = supabase.table('Events').update(data).eq('event_id', event_id).execute()
+
+    if response.data:
+        return jsonify(response.data[0]), 200
+    else:
+        return jsonify({"error": "Event not found or no fields updated"}), 404
+
+    
 
 @bp.route('/<int:event_id>', methods=['DELETE'])
 def cancel_event(event_id):
-    pass
+    response = supabase.table('Events').delete().eq('event_id', event_id).execute()
+
+    if response.data:
+        return jsonify(response.data[0]), 200
+    else:
+        return jsonify({"error": "Event not found or could not be deleted"}), 404
+    
