@@ -1,4 +1,4 @@
-from supabase import create_client, Client
+from supabase import create_client, Client, SupabaseStorageClient
 from .config import Config
 
 supabase: Client = None
@@ -9,3 +9,8 @@ def get_supabase_client():
     global supabase
     supabase = create_client(supabase_url, supabase_key)
     return supabase
+
+def upload_image_to_supabase(bucket_name, file_name, file_content):
+    supabase = get_supabase_client()
+    store = supabase.storage
+    return store.from_(bucket_name).upload(file_name, file_content)
