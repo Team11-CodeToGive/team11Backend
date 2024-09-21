@@ -90,7 +90,7 @@ def cancel_event(event_id):
         if response.data:
             location_response = supabase.table('Location').delete().eq('id', response.data[0]['address_id']).execute()
             if location_response:
-                return jsonify(response.data[0]), 200
+                return jsonify({"message": "Event deleted successfully!"}), 201
             else:
                 return jsonify({"error": "Event not found or could not be deleted"}), 404
     except Exception as e:

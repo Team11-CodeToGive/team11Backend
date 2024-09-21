@@ -15,6 +15,9 @@ def create_registration():
 
         if event_response.data:
             # If event exists, append user_id to the attendees list
+            if is_registered(registration_data):
+                return jsonify({"message": "User already registered!"}), 400
+
             response = supabase.table('EventRegistration').insert(registration_data).execute()
 
             if response.data:
@@ -35,3 +38,11 @@ def cancel_registrations(registration_id):
         else:
             return jsonify({"error": "Registration not found or could not be deleted"}), 404
              
+def is_registered(resgistration_data):
+    '''
+    Check if user already registered to event'''
+    response = supabase.table('EventRegistration').select('*')\
+        .eq('event_id', resgistration_data['event_id'])\
+            .eq('user_id', resgistration_data['user_id']).execute()
+    
+    return len(response.data) > 0
