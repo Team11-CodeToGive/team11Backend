@@ -7,7 +7,6 @@ supabase = get_supabase_client()
 @bp.route('/', methods=['GET'])
 def get_events():
     response = supabase.table('Events').select('*').execute()
-
     if response.data:
         for i in range(len(response.data)):
             location_response = supabase.table('Location').select('*').eq('id', response.data[i]['address_id']).execute()
