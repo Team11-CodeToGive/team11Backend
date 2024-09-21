@@ -16,3 +16,15 @@ def create_issue_report():
             return jsonify({"error": "Failed to create issue report"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@bp.route('/getAllIssueReports', methods=['GET'])
+def get_all_issue_reports():
+    try:
+        # Fetch all issue reports from the 'IssueReports' table
+        response = supabase.table('IssueReports').select('*').execute()
+        if len(response.data) > 0:
+            return jsonify({"issues": response.data}), 200
+        else:
+            return jsonify({"message": "No issue reports found"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
