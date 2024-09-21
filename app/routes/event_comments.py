@@ -9,8 +9,8 @@ def create_comment():
     comment_data = request.get_json()
     try:
         comment_response = supabase.table('EventComments').insert(comment_data).execute()
-        if len(comment_data.data) > 0:
-            return jsonify({"message": "Comment created successfully!"}), 201  
+        if len(comment_response.data) > 0:
+            return jsonify({"message": "Comment created successfully!","comment":comment_response.data[0]}), 201  
         else:
             return jsonify({"error": comment_response}), 500
     except Exception as e:
@@ -19,30 +19,19 @@ def create_comment():
 def create_reply():
     comment_data = request.get_json()
     try:
-        comment_response = supabase.table('EventComments').insert(comment_data).execute()
-        if len(comment_data.data) > 0:
-            return jsonify({"message": "Reply created successfully!"}), 201  
-        else:
-            return jsonify({"error": comment_response}), 500
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-@bp.route('/createReply', methods=['POST'])
-def create_reply():
-    comment_data = request.get_json()
-    try:
-        comment_response = supabase.table('EventComments').insert(comment_data).execute()
-        if len(comment_data.data) > 0:
-            return jsonify({"message": "Reply created successfully!"}), 201  
+        comment_response = supabase.table('EventReplies').insert(comment_data).execute()
+        if len(comment_response.data) > 0:
+            return jsonify({"message": "Reply created successfully!","reply":comment_response.data[0]}), 201  
         else:
             return jsonify({"error": comment_response}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @bp.route('/<int:event_id>', methods=['GET'])
 def get_comments(event_id):
-    response = supabase.table('EventComments').select('*').eq('event_id', event_id).execute()
+    response = supabase.from_('EventComments').select('id, content, event_id, EventReplies (id, content, event_id)').eq('event_id', event_id).execute()
     
     if response.data:
-        return jsonify(response.data[0]), 200
+        return jsonify(response.data), 200
     else:
         return jsonify({"error": "Event not found"}), 404
 

@@ -7,7 +7,6 @@ supabase = get_supabase_client()
 @bp.route('/', methods=['GET'])
 def get_events():
     response = supabase.table('Events').select('*').execute()
-
     if response.data:
         return jsonify(response.data), 200
     else:
