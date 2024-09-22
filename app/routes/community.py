@@ -12,7 +12,9 @@ def create_community():
         raise BadRequest("No input data provided")
     try:
         response = supabase.table('Community').insert(community_data).execute()
+        
         if len(response.data) >0:
+            community_data["community_id"] = response.data[0]["community_id"]
             del community_data['name']
             del community_data['description']
             del community_data['members']
@@ -105,4 +107,10 @@ def leave_community(community_id):
     except Exception as e:
         print(e)
         return jsonify({"error":str(e)}),400
+    
+@bp.route('/', methods=['GET'])
+def get_communties():
+    response = supabase.table('Community').select('*').execute()
+    return response.data
+
  

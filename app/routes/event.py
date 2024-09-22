@@ -12,7 +12,8 @@ supabase = get_supabase_client()
 def get_events():
     # Get pagination parameters from request (limit and offset)
     limit = request.args.get('limit', default=10, type=int)  # Default to 10 events per request
-    offset = request.args.get('offset', default=0, type=int)  # Offset for paginated results
+    page_number = request.args.get('page_number', default=0, type=int)  # Offset for paginated results
+    offset = page_number*limit
 
     response = supabase.table('Events').select('*').gt('start_datetime', get_current_datetime())\
         .order('start_datetime').range(offset, offset + limit - 1).execute()
@@ -38,12 +39,12 @@ def get_events():
             # Append the event to the list for that date
             events_by_date[event_date].append(response.data[i])
 
-            # Format the output as a list of dictionaries with 'date' and 'events' keys
-            for date, events in events_by_date.items():
-                grouped_events.append({
-                    "date": date,
-                    "events": events
-                })
+        # Format the output as a list of dictionaries with 'date' and 'events' keys
+        for date, events in events_by_date.items():
+            grouped_events.append({
+                "date": date,
+                "events": events
+            })
         
             # Add the attendees (with user info) to the event data
 
