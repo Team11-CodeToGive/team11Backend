@@ -39,9 +39,10 @@ def create_event():
             # Create the first event occurrence
             first_event_occurrence = event_data.copy()
 
-            del first_event_occurrence['recurrence_type']
-            del first_event_occurrence['recurrence_interval']
-            del first_event_occurrence['recurrence_end_datetime']
+            if event_data.get('recurring'):
+                del first_event_occurrence['recurrence_type']
+                del first_event_occurrence['recurrence_interval']
+                del first_event_occurrence['recurrence_end_datetime']
             response = supabase.table('Events').insert(first_event_occurrence).execute()
             if len(response.data) == 0:
                 return jsonify({"error": "Error creating first event occurrence"}), 400
@@ -53,7 +54,8 @@ def create_event():
 
                 return jsonify({"message": "Event created successfully with recurrences!"}), 201
             else:
-                return jsonify({"error": response.error_message}), 400
+                return jsonify({"message": "Event created successfully!"}), 201
+
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}), 400
