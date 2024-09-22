@@ -6,6 +6,7 @@ from .routes import authentication, community, image_upload
 from .routes import authentication, community
 from .routes import report
 from flask_cors import CORS
+from.routes import bookmark
 
 
 # Enable CORS for all routes and origins
@@ -21,6 +22,8 @@ def create_app():
     app.register_blueprint(event.bp, url_prefix = '/event')
     app.register_blueprint(report.bp, url_prefix='/report')
     app.register_blueprint(eventRegistration.bp, url_prefix = '/event_registration')
+    app.register_blueprint(bookmark.bp, url_prefix = '/bookmark')
+
 
 
 
