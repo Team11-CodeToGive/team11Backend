@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from ..supabase_service import get_supabase_client, upload_image_to_supabase
 from werkzeug.utils import secure_filename
 import os
+import random,string
 
 bp = Blueprint('image_upload_routes', __name__)
 supabase = get_supabase_client()
@@ -29,7 +30,7 @@ def upload_image():
             file_content = file.read()
             
             # Upload to Supabase bucket (e.g., 'event-images')
-            response = upload_image_to_supabase('event-images', filename, file_content)
+            response = upload_image_to_supabase('event-images', filename + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5)), file_content)
             
             # Image uploaded successfully, return the public URL
             image_url = f"{supabase.storage.from_('event-images').get_public_url(filename)}"
