@@ -5,9 +5,14 @@ from .routes import authentication, community, image_upload
 
 from .routes import authentication, community
 from .routes import report
+from flask_cors import CORS
+
+
+# Enable CORS for all routes and origins
+
 def create_app():
     app = Flask(__name__)
-
+    CORS(app)
     # Register blueprints for modular routes
     app.register_blueprint(authentication.bp, url_prefix='/users')
     app.register_blueprint(event_comments.bp, url_prefix='/comments')
