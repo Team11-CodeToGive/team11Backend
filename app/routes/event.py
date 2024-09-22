@@ -55,7 +55,13 @@ def get_events():
 @bp.route('/create', methods=['POST'])
 def create_event():
     event_data = request.get_json()
+    location_geocode = geolocator.geocode(event_data["location"]["address"])
+    if location_geocode is None:
+        return jsonify({"error" : "Invalid location address"})
+    event_data['location']['latitude'] = location_geocode.latitude
+    event_data['location']['longitude'] = location_geocode.longitude
     try:
+        
         location_response = supabase.table('Location').insert(event_data['location']).execute()
         if len(location_response.data) > 0:
             del event_data['location']
@@ -123,14 +129,18 @@ def get_event(event_id):
 @bp.route('/<int:event_id>', methods=['PUT'])
 def update_event(event_id):
     new_data = request.get_json()
-
     if not new_data:
         return jsonify({"error": "No data provided to update"}), 400
-
-    try:
+    if "location" in new_data:
+        location_geocode = geolocator.geocode(new_data["location"]["address"])
+        if location_geocode is None:
+            return jsonify({"error" : "Invalid location address"})
+        new_data['location']['latitude'] = location_geocode.latitude
+        new_data['location']['longitude'] = location_geocode.longitude
         location_response = supabase.table('Location').insert(new_data['location']).execute()
+        del new_data['location']
+    try:
         if len(location_response.data) > 0:
-            del new_data['location']
             new_data['address_id'] = location_response.data[0]['id']
             response = supabase.table('Events').update(new_data).eq('event_id', event_id).execute()
 
@@ -162,13 +172,25 @@ def cancel_event(event_id):
 def get_nearby_events():
     loc = request.get_json()
     try:
-        response = supabase.table('Events').select("address_id", "Location(id,address)").execute()
+        response = supabase.table('Location').select("latitude, longitude").eq("address", loc['address']).limit(1).execute()
+        user_coor = (response.data[0]['latitude'], response.data[0]["longitude"])
+    except Exception as e:
+        print(e)
+        location_geocode = geolocator.geocode(loc["address"])
+        if location_geocode is None:
+            return jsonify({"error" : "Invalid location address"})
+        user_coor = (location_geocode.latitude,location_geocode.longitude)
+
+    try:
+        response = supabase.table('Events').select("event_id", "Location(id,latitude,longitude)").execute()
         result = {}
         for val in response.data:
-            event_id = val["Location"]["id"]
-            event_address = val["Location"]["address"]
+            event_id = val["event_id"]
+            if val["Location"]["latitude"] == None or val["Location"]["longitude"] == None:
+                continue
+            event_coor= (val["Location"]["latitude"], val["Location"]['longitude'])
             try:
-                dist = round(calc_distance(loc['address'], event_address),2)
+                dist = round(calc_distance(user_coor, event_coor),2)
                 result[event_id] = dist
             except Exception as e:
                 print(f"Error calculating distance for event ID {event_id}: {e}")
@@ -176,8 +198,8 @@ def get_nearby_events():
     except Exception as e:
         print(e)
         return jsonify({"error": str(e)}),400
-    sorted_result = sorted(result.items(), key=lambda x: x[1], reverse=True)
-    return jsonify(result)
+    sorted_result = sorted(result.items(), key=lambda x: x[1], reverse=False)
+    return jsonify(sorted_result)
 
 # Utility Functions
 
@@ -272,10 +294,6 @@ def add_years(current_datetime, years):
 
 ## calculates the distance between two locations
 def calc_distance(loc1,loc2):
-    loc1 = geolocator.geocode(loc1)
-    loc2 = geolocator.geocode(loc2)
-    loc1 = (loc1.latitude, loc1.longitude)
-    loc2 = (loc2.latitude, loc2.longitude)
     dist = distance.distance(loc1,loc2).miles
     return dist
 

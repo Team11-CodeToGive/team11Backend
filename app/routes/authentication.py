@@ -1,12 +1,19 @@
 from flask import Blueprint, request, jsonify
 from ..supabase_service import get_supabase_client
+from geopy.geocoders import Nominatim
 
+geolocator = Nominatim(user_agent="5b3ce3597851110001cf62481ce24ea21f7847f7a5ffedc7f1eac56c")
 bp = Blueprint('user_routes', __name__)
 supabase = get_supabase_client()
 
 @bp.route('/create', methods=['POST'])
 def create_user():
     user_data = request.get_json()
+    location_geocode = geolocator.geocode(user_data["location"]["address"])
+    if location_geocode is None:
+        return jsonify({"error" : "Invalid location address"})
+    user_data['location']['latitude'] = location_geocode.latitude
+    user_data['location']['longitude'] = location_geocode.longitude
     try:
         location_response = supabase.table('Location').insert(user_data['location']).execute()
         if len(location_response.data) > 0:
