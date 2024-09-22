@@ -1,6 +1,9 @@
 from flask import Blueprint, request, jsonify
 from ..supabase_service import get_supabase_client
+from geopy import distance
+from geopy.geocoders import Nominatim
 
+geolocator = Nominatim(user_agent="5b3ce3597851110001cf62481ce24ea21f7847f7a5ffedc7f1eac56c")
 bp = Blueprint('event_routes', __name__)
 supabase = get_supabase_client()
 
@@ -96,7 +99,26 @@ def cancel_event(event_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 400
     
-
+@bp.route('/nearby', methods=['GET'])
+def get_nearby_events():
+    loc = request.get_json()
+    try:
+        response = supabase.table('Events').select("address_id", "Location(id,address)").execute()
+        result = {}
+        for val in response.data:
+            event_id = val["Location"]["id"]
+            event_address = val["Location"]["address"]
+            try:
+                dist = round(calc_distance(loc['address'], event_address),2)
+                result[event_id] = dist
+            except Exception as e:
+                print(f"Error calculating distance for event ID {event_id}: {e}")
+                continue    
+    except Exception as e:
+        print(e)
+        return jsonify({"error": str(e)}),400
+    sorted_result = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    return jsonify(result)
 
 # Utility Functions
 
@@ -120,3 +142,12 @@ def get_attendees_info(attendee_response):
             attendees_user_info.append(attendee)
     
     return attendees_user_info
+
+## calculates the distance between two locations
+def calc_distance(loc1,loc2):
+    loc1 = geolocator.geocode(loc1)
+    loc2 = geolocator.geocode(loc2)
+    loc1 = (loc1.latitude, loc1.longitude)
+    loc2 = (loc2.latitude, loc2.longitude)
+    dist = distance.distance(loc1,loc2).miles
+    return dist
