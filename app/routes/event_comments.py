@@ -28,7 +28,7 @@ def create_reply():
         return jsonify({"error": str(e)}), 500
 @bp.route('/<int:event_id>', methods=['GET'])
 def get_comments(event_id):
-    response = supabase.from_('EventComments').select('id, content, event_id, EventReplies (id, content, event_id)').eq('event_id', event_id).execute()
+    response = supabase.from_('EventComments').select('id, content, event_id ,users(user_id, name), EventReplies (id, content, event_id,users(user_id, name))').eq('event_id', event_id).execute()
     
     if response.data:
         return jsonify(response.data), 200
