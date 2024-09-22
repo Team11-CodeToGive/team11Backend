@@ -10,19 +10,44 @@ supabase = get_supabase_client()
 
 @bp.route('/', methods=['GET'])
 def get_events():
-    response = supabase.table('Events').select('*').execute()
+    # Get pagination parameters from request (limit and offset)
+    limit = request.args.get('limit', default=10, type=int)  # Default to 10 events per request
+    offset = request.args.get('offset', default=0, type=int)  # Offset for paginated results
+
+    response = supabase.table('Events').select('*').gt('start_datetime', get_current_datetime())\
+        .order('start_datetime').range(offset, offset + limit - 1).execute()
+    grouped_events = []
     if response.data:
+        events_by_date = {}
+
         for i in range(len(response.data)):
             location_response = supabase.table('Location').select('*').eq('id', response.data[i]['address_id']).execute()
             if location_response.data:
                 response.data[i]['location'] = location_response.data[0]
                 del response.data[i]['address_id']
             attendee_response = supabase.table('EventRegistration').select('*').eq('event_id', response.data[i]['event_id']).execute()
-        
-            # Add the attendees (with user info) to the event data
             response.data[i]['attendees'] = get_attendees_info(attendee_response)
 
-        return jsonify(response.data), 200
+             # Extract the date from the event's start_datetime and convert it to a string
+            event_date = datetime.strptime(response.data[i]['start_datetime'], "%Y-%m-%dT%H:%M:%S").date().isoformat()
+
+            # Group events by the date; initialize the list if it doesn't exist
+            if event_date not in events_by_date:
+                events_by_date[event_date] = []
+            
+            # Append the event to the list for that date
+            events_by_date[event_date].append(response.data[i])
+
+            # Format the output as a list of dictionaries with 'date' and 'events' keys
+            for date, events in events_by_date.items():
+                grouped_events.append({
+                    "date": date,
+                    "events": events
+                })
+        
+            # Add the attendees (with user info) to the event data
+
+        return jsonify(grouped_events), 200
     else:
         return jsonify([]), 200
 
@@ -252,3 +277,6 @@ def calc_distance(loc1,loc2):
     loc2 = (loc2.latitude, loc2.longitude)
     dist = distance.distance(loc1,loc2).miles
     return dist
+
+def get_current_datetime():
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
