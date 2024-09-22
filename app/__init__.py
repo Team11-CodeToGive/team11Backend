@@ -13,6 +13,7 @@ from.routes import bookmark
 
 def create_app():
     app = Flask(__name__)
+    app.secret_key = "a_very_secret_key_12345"
     CORS(app)
     # Register blueprints for modular routes
     app.register_blueprint(authentication.bp, url_prefix='/users')
