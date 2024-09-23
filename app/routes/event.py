@@ -3,6 +3,22 @@ from ..supabase_service import get_supabase_client
 from datetime import datetime, timedelta
 from geopy import distance
 from geopy.geocoders import Nominatim
+import threading
+import google.generativeai as genai
+import os
+
+genai.configure(api_key=os.environ["API_KEY"])
+
+def handle_result(result,event_id):
+    if result == True:
+        supabase.table('Events').delete().eq('event_id', event_id).execute()
+
+def is_hateful_event(title,description, event_id,callback):
+    model = genai.GenerativeModel("gemini-1.5-flash")
+    prompt = f"Please evaluate the following content and respond with 'Hateful' if it is hateful or 'Not Hateful' if it is not: '{description} {title}'"
+    response = model.generate_content(prompt)
+    result = response.candidates[0].finish_reason  == 3
+    callback(result,event_id)
 
 geolocator = Nominatim(user_agent="5b3ce3597851110001cf62481ce24ea21f7847f7a5ffedc7f1eac56c")
 bp = Blueprint('event_routes', __name__)
@@ -61,7 +77,6 @@ def create_event():
     event_data['location']['latitude'] = location_geocode.latitude
     event_data['location']['longitude'] = location_geocode.longitude
     try:
-        
         location_response = supabase.table('Location').insert(event_data['location']).execute()
         if len(location_response.data) > 0:
             del event_data['location']
@@ -79,8 +94,12 @@ def create_event():
                 del first_event_occurrence['recurrence_interval']
                 del first_event_occurrence['recurrence_end_datetime']
             response = supabase.table('Events').insert(first_event_occurrence).execute()
+            
             if len(response.data) == 0:
                 return jsonify({"error": "Error creating first event occurrence"}), 400
+            else:
+                thread = threading.Thread(target=is_hateful_event, args=(event_data['title'],event_data['description'],response.data[0]['event_id'],handle_result))
+                thread.start()
              # If recurrence details are provided, calculate and create future occurrences
             if recurrence_type and recurrence_end_datetime:
                 # Create occurrences based on recurrence rules
