@@ -1,7 +1,7 @@
 from flask import Flask
 from .routes import authentication, community, event, eventRegistration
 from .routes import authentication,event_comments
-from .routes import authentication, community, image_upload
+from .routes import authentication, community, image_upload,createFlyer
 
 from .routes import authentication, community
 from .routes import report
@@ -24,7 +24,7 @@ def create_app():
     app.register_blueprint(report.bp, url_prefix='/report')
     app.register_blueprint(eventRegistration.bp, url_prefix = '/event_registration')
     app.register_blueprint(bookmark.bp, url_prefix = '/bookmark')
-
+    app.register_blueprint(createFlyer.bp, url_prefix = '/createFlyer')
 
 
 

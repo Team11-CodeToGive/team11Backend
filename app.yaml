@@ -1,0 +1,6 @@
+runtime: python310  # or python38 if using Python 3.8
+entrypoint: gunicorn -b :$PORT run:app  # app refers to the Flask app name
+
+handlers:
+- url: /.*
+  script: auto
